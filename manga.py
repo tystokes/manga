@@ -69,29 +69,6 @@ class series(Thread):
             self.work_chapter(c)
         print('**************** ' + self.title + ' finished ****************')
 
-    def old_algorighm(self):
-        for c in range(1,10**self.digits):
-            padded_chapter = '0' * (self.digits - len(str(c))) + str(c)
-            for p in range(1,10**self.digits):
-                padded_page = '0' * (self.digits - len(str(p))) + str(p)
-                filename = './' + self.title + '/' + padded_chapter + '.' + padded_page + '.jpg'
-                ensure_dir(filename)
-                if not os.path.isfile(filename) or os.path.getsize(filename) < 4000:
-                    string = mangawall + '/' + self.title + '/c' + padded_chapter + '/' + str(p) + '.html'
-                    print(string)
-                    page = urllib.request.urlopen(string)
-                    if not page:
-                        break
-                    soup = BeautifulSoup(page.read())
-                    image = soup.find('img',{'id':'image'})
-                    if not image:
-                        if p == 1:
-                            return
-                        break
-                    print(image['src'])
-                    with open(filename,'wb') as f:
-                        f.write(urllib.request.urlopen(image['src']).read())
-
 manga = ['oukoku_game', 'minamoto_kun_monogatari', 'sankarea',
     'nisekoi_komi_naoshi', 'noblesse', 'kimi_no_iru_machi',
     'the_breaker_new_waves', 'shokugeki_no_soma', 'noragami',
