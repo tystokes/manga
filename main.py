@@ -16,7 +16,8 @@ manga_list = ['oukoku_game', 'minamoto_kun_monogatari', 'sankarea',
     'nisekoi_komi_naoshi', 'noblesse', 'kimi_no_iru_machi',
     'the_breaker_new_waves', 'shokugeki_no_soma', 'noragami',
     'tora_kiss_a_school_odyssey', 'ao_no_exorcist', 'ore_monogatari',
-    'onepunch_man']
+    'onepunch_man', 'boku_wa_tomodachi_ga_sukunai', 'monochrome_myst',
+    'tonari_no_seki_kun']
 for m in manga_list:
     # The manga.series class is a Thread so it must be '.start()'ed.
     s = manga.series(mangahere, m)
