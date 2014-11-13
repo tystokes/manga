@@ -1,5 +1,10 @@
 #!/usr/bin/python
 import manga
+from os import chdir
+from os.path import realpath, dirname
+
+# Switch the current working directory to directory this file is in
+chdir(realpath(dirname(__file__)))
 
 """
 This is my particular main file. Please, edit it to fit your needs.
@@ -12,12 +17,10 @@ I have two different sites to download from
 
 # The 'root url' for mangahere's manga
 mangahere = 'http://www.mangahere.co/manga'
-manga_list = ['oukoku_game', 'minamoto_kun_monogatari', 'sankarea',
-    'nisekoi_komi_naoshi', 'noblesse', 'kimi_no_iru_machi',
-    'the_breaker_new_waves', 'shokugeki_no_soma', 'noragami',
-    'tora_kiss_a_school_odyssey', 'ao_no_exorcist', 'ore_monogatari',
-    'onepunch_man', 'boku_wa_tomodachi_ga_sukunai', 'monochrome_myst',
-    'tonari_no_seki_kun']
+
+# List of url_endings corresponding to a particular series:
+manga_list = ['nisekoi_komi_naoshi', 'onepunch_man']
+
 for m in manga_list:
     # The manga.series class is a Thread so it must be '.start()'ed.
     s = manga.series(mangahere, m)
@@ -27,13 +30,26 @@ for m in manga_list:
     # If you would like to only download one series at a time uncomment s.join()
     # this will make it so it waits for the thread to finish before continuing
 
-# And similarly for another manga reader site that has raw scans:
+# And similarly for senmanga's raw scans:
 
-# The 'root url' for senmanga
-senmanga = 'http://raw.senmanga.com'
+senmanga = 'http://raw.senmanga.com' # The 'root url' for raws @ senmanga
 raw_list = ['Nisekoi']
 for r in raw_list:
     manga.series(senmanga, r).start()
 
 # I have tuned the algorithm to work for both mangahere and senmanga
-# Other sites may work as well but have not been tested
+# Other sites may work, but are not tested for.
+# Support for other sites (like those below) are in the works
+
+"""
+mangapanda = 'http://www.mangapanda.com'
+panda_list = ['tetsugaku-letra']
+for p in panda_list:
+    manga.series(mangapanda, p).start()
+"""
+"""
+mangapark = 'http://v2012.mangapark.com'
+park_list = ['Death-Note']
+for p in park_list:
+    manga.series(mangapark, p).start()
+"""
