@@ -75,7 +75,11 @@ After 10 failed attempts it will raise an exception.
 def repeat_urlopen(my_str):
     for i in range(10):
         try:
-            return opener.open(my_str)
+            tmp = opener.open(my_str)
+            if not tmp:
+                return None
+            else:
+                return tmp.read()
         except Exception as e:
             print(e)
             sleep(1)
@@ -128,8 +132,7 @@ class series(Thread):
 
     def get_chapters(self):
         my_str = self.site + '/' + self.title + '/'
-        page = repeat_urlopen(my_str)
-        soup = BeautifulSoup(page.read())
+        soup = BeautifulSoup(repeat_urlopen(my_str))
         links = soup.find_all('a')
         all_chapters = set()
         for l in links:
@@ -161,9 +164,8 @@ class series(Thread):
                 self.extra_chapter_add = 10**(self.digits-1) * self.extra_chapter
             if str(c) + '.' + str(self.extra_chapter) in self.index:
                 return
-            page = repeat_urlopen(my_str)
             # what about case when page is 404 or something?
-            soup = BeautifulSoup(page.read())
+            soup = BeautifulSoup(repeat_urlopen(my_str))
             opts = soup.find_all('option')
             all_opts = set()
             opts_list = list()
@@ -199,7 +201,7 @@ class series(Thread):
                 page = repeat_urlopen(o[0])
                 if not page:
                     continue
-                soup = BeautifulSoup(page.read())
+                soup = BeautifulSoup(page)
                 ids = ('image', 'picture')
                 for i in ids:
                     image = soup.find('img',{'id':i})
@@ -211,7 +213,7 @@ class series(Thread):
                 if 'http://' not in image_url:
                      image_url = self.site + image_url
                 with open(filename,'wb') as f:
-                    f.write(repeat_urlopen(image_url).read())
+                    f.write(repeat_urlopen(image_url))
             self.q.task_done()
 
     def sorted(self, c):
