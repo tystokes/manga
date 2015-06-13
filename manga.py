@@ -9,6 +9,7 @@ from queue import Queue
 from json import load, dump
 from collections import MutableMapping, namedtuple
 from time import sleep
+from gzip import decompress
 
 encoding = getfilesystemencoding()
 
@@ -64,29 +65,32 @@ class JSONDict(MutableMapping):
     def __len__(self):
         return len(self.store)
 
-# Build up a user-agent header to spoof as a normal browser
-opener = build_opener()
-opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-
 """ 
 Repeatedly tries to open the specified URL.
 After 10 failed attempts it will raise an exception.
 """
-def repeat_urlopen(my_str):
-    for i in range(10):
+def repeat_urlopen(my_str, url=None, attempts=5):
+    for i in range(attempts):
         try:
+            # Build up a user-agent header to spoof as a normal browser
+            opener = build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+            if url:
+                opener.addheaders = [('Referer', url)]
             tmp = opener.open(my_str)
             if not tmp:
                 return None
             else:
+                if tmp.info().get('Content-Encoding') == 'gzip':
+                    return decompress(tmp.read())
                 return tmp.read()
         except Exception as e:
             print(e)
             sleep(1)
-    raise Exception('Unable to resolve URL (' + my_str + ') after 10 attempts.')
+    raise Exception('Unable to resolve URL (%s) after %d attempts.' % (my_str, attempts))
 
 class series(Thread):
-    def __init__(self, site, title, sort=True, digits=3, workers=3, reindex=False):
+    def __init__(self, site, title, sort=True, digits=3, workers=2, reindex=False):
         """
         site: specifies the root url for the manga on a site
 
@@ -128,10 +132,10 @@ class series(Thread):
             t.setDaemon(True)
             self.workers.append(t)
             t.start()
-        self.index = JSONDict('./' + self.title + '/index.json', self.reindex)
+        self.index = JSONDict('./%s/index.json' % self.title, self.reindex)
 
     def get_chapters(self):
-        my_str = self.site + '/' + self.title + '/'
+        my_str = '%s/%s/' % (self.site, self.title)
         soup = BeautifulSoup(repeat_urlopen(my_str))
         links = soup.find_all('a')
         all_chapters = set()
@@ -148,7 +152,7 @@ class series(Thread):
 
     def work_chapter(self, my_str):
         try:
-            search_str = self.site + '/' + self.title
+            search_str = '%s/%s' % (self.site, self.title)
             prefix = search(r'(.*?c?[0-9]+(\.[0-9]+)?/)([0-9]+(\.html)?)?\Z', my_str).group(1)
             ch_search = search(search_str + r'.*?c?([0-9]+(\.([0-9]+))?)/([0-9]+(\.html)?)?\Z', my_str)
             c = ch_search.group(1)
@@ -185,7 +189,8 @@ class series(Thread):
             for o in opts_list:
                 self.q.put(o)
             self.q.join()
-            self.index[str(c) + '.' + str(self.extra_chapter)] = True
+            if len(opts_list) > 0:
+                self.index[str(c) + '.' + str(self.extra_chapter)] = True
         except:
             raise
 
@@ -194,7 +199,7 @@ class series(Thread):
             o = self.q.get()
             p = int(o[1]) + self.extra_chapter_add
             padded_page = '0' * (self.digits - len(str(p))) + str(p)
-            filename = './' + self.title + '/' + self.padded_chapter + '.' + padded_page + '.jpg'
+            filename = './%s/%s.%s.jpg' % (self.title, self.padded_chapter, padded_page)
             ensure_dir(filename)
             if not isfile(filename) or getsize(filename) < 100:
                 print(self.title, self.padded_chapter, padded_page)
@@ -213,7 +218,7 @@ class series(Thread):
                 if 'http://' not in image_url:
                      image_url = self.site + image_url
                 with open(filename,'wb') as f:
-                    f.write(repeat_urlopen(image_url))
+                    f.write(repeat_urlopen(image_url, o[0]))
             self.q.task_done()
 
     def sorted(self, c):
@@ -222,14 +227,14 @@ class series(Thread):
         return c
 
     def run(self):
-        print('**************** starting ' + self.title + ' ****************')
+        print('**************** starting %s ****************' % self.title)
         chapters = self.get_chapters()
         for c in self.sorted(chapters):
             while True:
                 try:
                     self.work_chapter(c)
                     break
-                except urllib.error.HTTPError as e:
+                except Exception as e:
                     print('Error', e)
                     continue
-        print('**************** ' + self.title + ' finished ****************')
+        print('**************** %s finished ****************' % self.title)
