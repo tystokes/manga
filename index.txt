@@ -1,0 +1,11 @@
+# lines that are blank or begin with # are ignored
+# lines that begin with > denotes url of site containing manga
+# ex:
+
+> http://www.mangahere.co/manga
+oukoku_game
+
+# This example will look up http://www.mangahere.co/manga/oukoku_game
+# can list multiple urls and titles line by line
+# titles will be automatically commented out when they are
+# found to longer be ongoing and are completely downloaded

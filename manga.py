@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from re import search
+from re import search, sub
 from os import makedirs
 from os.path import dirname, exists, isfile, getsize
 from sys import getfilesystemencoding
@@ -22,6 +22,46 @@ def ensure_dir(f):
             makedirs(d)
 
 Option = namedtuple('Option', ['text', 'value'])
+
+index_file = {}
+index_filename = None
+
+def update(filename):
+    global index_filename
+    index_filename = filename
+    with open(filename, "r") as f:
+        current_site = None
+        for l in f.read().split("\n"):
+            if len(l) == 0 or l.startswith("#"):
+                continue
+            elif l.startswith(">"):
+                current_site = sub(r'[\'", ]', '', l[1:].strip())
+                index_file[current_site] = []
+            else:
+                index_file[current_site].append(sub(r'[\'", ]', '', l.strip()))
+    for k, v in index_file.items():
+        for s in v:
+            series(k, s).start()
+
+def comment(site, title):
+    if not index_filename:
+        return False
+    total = ''
+    with open(index_filename, "r") as f:
+        current_site = None
+        for l in f.read().split("\n"):
+            if len(l) == 0:
+                continue
+            if l.startswith(">"):
+                current_site = sub(r'[\'", ]', '', l[1:].strip())
+            elif not l.startswith("#"):
+                tmp_title = sub(r'[\'", ]', '', l.strip())
+                if title == tmp_title and current_site == site:
+                    total += "# %s\n" % sub(r'[\'", ]', '', l.strip())
+                    continue
+            total += "%s\n" % l
+    with open(index_filename, "w") as f:
+        f.write(total)
 
 """
 A JSONDict is a dictionary that automatically saves itself when modified.
@@ -64,6 +104,9 @@ class JSONDict(MutableMapping):
 
     def __len__(self):
         return len(self.store)
+
+# Stores series that are no longer being serialized and are completely downloaded.
+main_index = JSONDict('./index.json')
 
 """ 
 Repeatedly tries to open the specified URL.
@@ -139,6 +182,18 @@ class series(Thread):
         soup = BeautifulSoup(repeat_urlopen(my_str))
         links = soup.find_all('a')
         all_chapters = set()
+        self.completed = False
+        try:
+            status_li = soup.find("ul", { "class": "detail_topText" }).find_all("li")
+            for li in status_li:
+                status_label = li.find("label")
+                if not status_label:
+                    continue
+                if 'Status' in status_label.getText().encode('ascii', 'ignore').decode('ascii') and 'Completed' in li.getText().encode('ascii', 'ignore').decode('ascii'):
+                    self.completed = True
+                    break
+        except Exception as e:
+            pass
         for l in links:
             try:
                 if search(my_str + r'.*?c?([0-9]+(\.[0-9]+)?)/([0-9]+(\.html)?)?\Z', l['href']):
@@ -237,4 +292,10 @@ class series(Thread):
                 except Exception as e:
                     print('Error', e)
                     continue
+        if self.completed:
+            with filesystemLock:
+                main_index[self.title] = True
+                print('%s is a completed work.'% self.title)
+                if self.site in index_file and self.title in index_file[self.site]:
+                    comment(self.site, self.title)
         print('**************** %s finished ****************' % self.title)
