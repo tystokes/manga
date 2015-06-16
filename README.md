@@ -24,14 +24,11 @@ Fully:
 
 - mangahere
 
-Partial:
-
-- senmanga
-
-Possibly:
+Not Yet:
 
 - mangapanda
 - mangapark
+- senmanga
 
 ## Features
 

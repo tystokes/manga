@@ -112,7 +112,7 @@ main_index = JSONDict('./index.json')
 Repeatedly tries to open the specified URL.
 After 10 failed attempts it will raise an exception.
 """
-def repeat_urlopen(my_str, url=None, attempts=5):
+def repeat_urlopen(my_str, url=None, attempts=2):
     for i in range(attempts):
         try:
             # Build up a user-agent header to spoof as a normal browser
@@ -178,8 +178,12 @@ class series(Thread):
         self.index = JSONDict('./%s/index.json' % self.title, self.reindex)
 
     def get_chapters(self):
-        my_str = '%s/%s/' % (self.site, self.title)
-        soup = BeautifulSoup(repeat_urlopen(my_str))
+        try:
+            my_str = '%s/%s/' % (self.site, self.title)
+            soup = BeautifulSoup(repeat_urlopen(my_str))
+        except:
+            my_str = '%s/%s' % (self.site, self.title)
+            soup = BeautifulSoup(repeat_urlopen(my_str))
         links = soup.find_all('a')
         all_chapters = set()
         self.completed = False
