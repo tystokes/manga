@@ -4,7 +4,7 @@ from os import makedirs
 from os.path import dirname, exists, isfile, getsize
 from sys import getfilesystemencoding
 from urllib.request import build_opener
-from threading import Thread, Lock
+from threading import Thread, Lock, Semaphore
 from queue import Queue
 from json import load, dump
 from collections import MutableMapping, namedtuple
@@ -14,6 +14,9 @@ from gzip import decompress
 encoding = getfilesystemencoding()
 
 filesystemLock = Lock()
+
+# max number of simultaneous web requests
+max_workers = Semaphore(value=5)
 
 def ensure_dir(f):
     with filesystemLock:
@@ -112,28 +115,29 @@ main_index = JSONDict('./index.json')
 Repeatedly tries to open the specified URL.
 After 10 failed attempts it will raise an exception.
 """
-def repeat_urlopen(my_str, url=None, attempts=2):
-    for i in range(attempts):
-        try:
-            # Build up a user-agent header to spoof as a normal browser
-            opener = build_opener()
-            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-            if url:
-                opener.addheaders = [('Referer', url)]
-            tmp = opener.open(my_str)
-            if not tmp:
-                return None
-            else:
-                if tmp.info().get('Content-Encoding') == 'gzip':
-                    return decompress(tmp.read())
-                return tmp.read()
-        except Exception as e:
-            print(e)
-            sleep(1)
-    raise Exception('Unable to resolve URL (%s) after %d attempts.' % (my_str, attempts))
+def repeat_urlopen(my_str, url=None, attempts=3):
+    with max_workers:
+        for i in range(attempts):
+            try:
+                # Build up a user-agent header to spoof as a normal browser
+                opener = build_opener()
+                opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+                if url:
+                    opener.addheaders = [('Referer', url)]
+                tmp = opener.open(my_str)
+                if not tmp:
+                    return None
+                else:
+                    if tmp.info().get('Content-Encoding') == 'gzip':
+                        return decompress(tmp.read())
+                    return tmp.read()
+            except Exception as e:
+                print(e)
+                sleep(1)
+        raise Exception('Unable to resolve URL (%s) after %d attempts.' % (my_str, attempts))
 
 class series(Thread):
-    def __init__(self, site, title, sort=True, digits=3, workers=2, reindex=False):
+    def __init__(self, site, title, sort=True, digits=3, workers=5, reindex=False):
         """
         site: specifies the root url for the manga on a site
 
@@ -276,8 +280,11 @@ class series(Thread):
                 image_url = image['src']
                 if 'http://' not in image_url:
                      image_url = self.site + image_url
-                with open(filename,'wb') as f:
-                    f.write(repeat_urlopen(image_url, o[0]))
+                try:
+                    with open(filename,'wb') as f:
+                        f.write(repeat_urlopen(image_url, o[0]))
+                except:
+                    print('Unable to download %s.' % filename)
             self.q.task_done()
 
     def sorted(self, c):
