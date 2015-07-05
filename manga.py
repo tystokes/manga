@@ -34,7 +34,8 @@ def update(filename):
     index_filename = filename
     with open(filename, "r") as f:
         current_site = None
-        for l in f.read().split("\n"):
+        for l in f.readlines():
+            l = l[:-1].strip()
             if len(l) == 0 or l.startswith("#"):
                 continue
             elif l.startswith(">"):
@@ -52,17 +53,18 @@ def comment(site, title):
     total = ''
     with open(index_filename, "r") as f:
         current_site = None
-        for l in f.read().split("\n"):
-            if len(l) == 0:
-                continue
+        for l in f.readlines():
+            old_l = l[:-1]
+            l = l[:-1].strip()
             if l.startswith(">"):
                 current_site = sub(r'[\'", ]', '', l[1:].strip())
             elif not l.startswith("#"):
                 tmp_title = sub(r'[\'", ]', '', l.strip())
                 if title == tmp_title and current_site == site:
-                    total += "# %s\n" % sub(r'[\'", ]', '', l.strip())
+                    indent = search(r'(\s*).+', old_l).group(1)
+                    total += "%s# %s - Completed.\n" % (indent, sub(r'[\'", ]', '', l.strip()))
                     continue
-            total += "%s\n" % l
+            total += "%s\n" % old_l
     with open(index_filename, "w") as f:
         f.write(total)
 

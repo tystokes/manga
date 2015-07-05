@@ -3,9 +3,11 @@
 # ex:
 
 > http://www.mangahere.co/manga
-oukoku_game
+    oukoku_game
+    horimiya
 
-# This example will look up http://www.mangahere.co/manga/oukoku_game
+# This example will look up http://www.mangahere.co/manga/oukoku_game/
+# and then http://www.mangahere.co/manga/horimiya/
 # can list multiple urls and titles line by line
 # titles will be automatically commented out when they are
 # found to longer be ongoing and are completely downloaded
