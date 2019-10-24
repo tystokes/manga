@@ -2,12 +2,12 @@
 # lines that begin with > denotes url of site containing manga
 # ex:
 
-> http://www.mangahere.co/manga
+> http://www.mangahere.cc/manga
     oukoku_game
     horimiya
 
-# This example will look up http://www.mangahere.co/manga/oukoku_game/
-# and then http://www.mangahere.co/manga/horimiya/
+# This example will look up http://www.mangahere.cc/manga/oukoku_game/
+# and then http://www.mangahere.cc/manga/horimiya/
 # can list multiple urls and titles line by line
 # titles will be automatically commented out when they are
 # found to longer be ongoing and are completely downloaded
