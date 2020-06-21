@@ -133,7 +133,8 @@ def repeat_urlopen(my_str, url=None, attempts=5):
                 opener = build_opener()
                 opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36')]
                 if url:
-                    opener.addheaders = [('Referer', url)]
+                    opener.addheaders.append(('Referer', url))
+                opener.addheaders.append(('Cookie', 'isAdult=1'))
                 tmp = opener.open(my_str)
                 if not tmp:
                     return None
